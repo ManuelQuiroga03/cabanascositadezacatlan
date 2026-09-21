@@ -3,4 +3,5 @@
   <Project Path="CositadeZacatlan.Application/CositadeZacatlan.Application.csproj" />
   <Project Path="CositadeZacatlan.Domain/CositadeZacatlan.Domain.csproj" />
   <Project Path="CositadeZacatlan.Infrastructure/CositadeZacatlan.Infrastructure.csproj" />
+  <Project Path="../../tests/CositadeZacatlan.UnitTests/CositadeZacatlan.UnitTests.csproj" />
 </Solution>
