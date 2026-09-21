@@ -1,0 +1,25 @@
+# .NET / C# Build Artifacts
+**/bin/
+**/obj/
+.vs/
+.idea/
+.vscode/
+*.user
+*.useros
+*.sln.docstates
+*.suo
+
+# Node / Vite Frontend Artifacts
+**/node_modules/
+**/dist/
+**/build/
+.env
+.env.local
+.env.production
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CositadeZacatlan.Api/CositadeZacatlan.Api.csproj" />
+  <Project Path="CositadeZacatlan.Application/CositadeZacatlan.Application.csproj" />
+  <Project Path="CositadeZacatlan.Domain/CositadeZacatlan.Domain.csproj" />
+  <Project Path="CositadeZacatlan.Infrastructure/CositadeZacatlan.Infrastructure.csproj" />
+</Solution>
