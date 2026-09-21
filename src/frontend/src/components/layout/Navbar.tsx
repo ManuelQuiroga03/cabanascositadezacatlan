@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Trees, PhoneCall, Menu, X, CalendarCheck, LayoutDashboard, Grid, Star } from 'lucide-react';
+import { Trees, PhoneCall, Menu, X, CalendarCheck, LayoutDashboard, Grid, Star, Home } from 'lucide-react';
+
+export type NavTab = 'landing' | 'accommodations' | 'matrix' | 'reviews' | 'admin';
 
 interface NavbarProps {
-  currentTab: 'landing' | 'matrix' | 'reviews' | 'admin';
-  onSelectTab: (tab: 'landing' | 'matrix' | 'reviews' | 'admin') => void;
+  currentTab: NavTab;
+  onSelectTab: (tab: NavTab) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab }) => {
@@ -15,6 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab }) => {
 
   const navItems = [
     { id: 'landing' as const, label: 'Inicio', icon: Trees },
+    { id: 'accommodations' as const, label: 'Cabañas & Suites', icon: Home },
     { id: 'matrix' as const, label: 'Matriz de Ocupación', icon: Grid },
     { id: 'reviews' as const, label: 'Reseñas', icon: Star },
     { id: 'admin' as const, label: 'Panel Admin', icon: LayoutDashboard },
@@ -68,11 +71,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab }) => {
             </a>
 
             <button
-              onClick={() => onSelectTab('landing')}
+              onClick={() => onSelectTab('accommodations')}
               className="inline-flex items-center space-x-2 bg-warmGold hover:bg-warmGold-hover text-forest-dark px-3.5 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm"
             >
               <CalendarCheck className="w-3.5 h-3.5" />
-              <span>Reservar</span>
+              <span>Reservar Cabaña</span>
             </button>
           </div>
 

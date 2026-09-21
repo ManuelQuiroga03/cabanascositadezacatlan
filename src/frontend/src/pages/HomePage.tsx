@@ -1,20 +1,18 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { HeroPlaceholder } from '../components/layout/HeroPlaceholder';
 import { AccommodationCard } from '../components/booking/AccommodationCard';
 import { accommodationsService } from '../services/accommodationsService';
-import type { Accommodation, AccommodationType } from '../types';
-import { Coffee, UtensilsCrossed, ShieldCheck, RefreshCw, Search, SlidersHorizontal, Users, Home, Hotel, LayoutGrid, RotateCcw } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import type { Accommodation } from '../types';
+import { Coffee, UtensilsCrossed, ShieldCheck, RefreshCw, ArrowRight, Sparkles, MapPin } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export const HomePage: React.FC = () => {
+interface HomePageProps {
+  onNavigateToAccommodations?: () => void;
+}
+
+export const HomePage: React.FC<HomePageProps> = ({ onNavigateToAccommodations }) => {
   const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<AccommodationType | 'All'>('All');
-  const [capacityFilter, setCapacityFilter] = useState<'All' | '1-2' | '3-5' | '6+'>('All');
-  const [maxPrice, setMaxPrice] = useState<number>(5000);
 
   const fetchAccommodations = async () => {
     setLoading(true);
@@ -70,44 +68,16 @@ export const HomePage: React.FC = () => {
     fetchAccommodations();
   }, []);
 
-  // Filtered Accommodations calculation
-  const filteredAccommodations = useMemo(() => {
-    return accommodations.filter((acc) => {
-      // 1. Text Search (name, description, amenities)
-      const matchesSearch = searchQuery.trim() === '' ||
-        acc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        acc.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        acc.amenities.some((a) => a.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      // 2. Type Filter
-      const matchesType = selectedType === 'All' || acc.type === selectedType;
-
-      // 3. Capacity Filter
-      let matchesCapacity = true;
-      if (capacityFilter === '1-2') matchesCapacity = acc.capacity <= 2;
-      else if (capacityFilter === '3-5') matchesCapacity = acc.capacity >= 3 && acc.capacity <= 5;
-      else if (capacityFilter === '6+') matchesCapacity = acc.capacity >= 6;
-
-      // 4. Max Price Filter
-      const matchesPrice = acc.basePrice <= maxPrice;
-
-      return matchesSearch && matchesType && matchesCapacity && matchesPrice;
-    });
-  }, [accommodations, searchQuery, selectedType, capacityFilter, maxPrice]);
-
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setSelectedType('All');
-    setCapacityFilter('All');
-    setMaxPrice(5000);
-  };
+  // Show top 3 featured accommodations for landing page showcase
+  const featuredAccommodations = accommodations.slice(0, 3);
 
   return (
     <div className="space-y-16 pb-16">
-      <HeroPlaceholder />
+      {/* Parallax Hero Header */}
+      <HeroPlaceholder onExploreClick={onNavigateToAccommodations} />
 
-      <section id="hospedajes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        {/* Section Title */}
+      {/* Featured Showcase Section (3 Teaser Cards instead of dumping 20 cards) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -115,177 +85,69 @@ export const HomePage: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center max-w-3xl mx-auto mb-10"
         >
-          <h2 className="text-xs uppercase tracking-widest font-bold text-terracotta mb-2">
-            Nuestros Hospedajes Exclusivos
+          <div className="inline-flex items-center space-x-2 bg-terracotta/10 text-terracotta px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Colección Destacada</span>
+          </div>
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest-dark">
+            Cabañas & Suites Destacadas
           </h2>
-          <p className="font-serif text-3xl sm:text-4xl font-bold text-forest-dark">
-            Encuentra tu cabaña o suite ideal en Zacatlán
-          </p>
           <p className="mt-3 text-stone-charcoal/70 text-sm">
-            Reserva directa sin comisiones de intermediarios. Aparta tus fechas de forma rápida y confiable.
+            Una muestra de nuestras opciones de hospedaje más aclamadas. Explora el catálogo completo para ver todas las 20 opciones con filtros avanzados.
           </p>
         </motion.div>
 
-        {/* Filter Controls Bar */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white rounded-2xl p-6 shadow-md border border-stone-muted mb-10 space-y-4"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-4 border-b border-stone-muted">
-            
-            {/* Search Input */}
-            <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-stone-charcoal/50" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar por nombre o amenidad (ej. Jacuzzi, Chimenea)..."
-                className="w-full pl-9 pr-4 py-2 bg-stone-light border border-stone-muted rounded-xl text-xs focus:ring-2 focus:ring-warmGold focus:outline-none transition-shadow"
-              />
-            </div>
-
-            {/* Type Filter Buttons with Vector Icons (No Raw Emojis) */}
-            <div className="flex items-center space-x-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-              <button
-                onClick={() => setSelectedType('All')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5 ${
-                  selectedType === 'All'
-                    ? 'bg-forest-dark text-warmGold shadow'
-                    : 'bg-stone-light text-stone-charcoal/70 hover:bg-stone-muted'
-                }`}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                <span>Todos ({accommodations.length})</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedType('Cabin')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5 ${
-                  selectedType === 'Cabin'
-                    ? 'bg-forest-dark text-warmGold shadow'
-                    : 'bg-stone-light text-stone-charcoal/70 hover:bg-stone-muted'
-                }`}
-              >
-                <Home className="w-3.5 h-3.5 text-warmGold" />
-                <span>Cabañas</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedType('HotelRoom')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5 ${
-                  selectedType === 'HotelRoom'
-                    ? 'bg-forest-dark text-warmGold shadow'
-                    : 'bg-stone-light text-stone-charcoal/70 hover:bg-stone-muted'
-                }`}
-              >
-                <Hotel className="w-3.5 h-3.5 text-warmGold" />
-                <span>Suites Hotel Boutique</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Secondary Filters: Capacity & Price Range */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-            
-            {/* Capacity Selector */}
-            <div className="flex items-center space-x-2 w-full sm:w-auto">
-              <Users className="w-4 h-4 text-terracotta shrink-0" />
-              <span className="font-bold text-stone-charcoal/70">Capacidad:</span>
-              <div className="flex items-center space-x-1">
-                {(['All', '1-2', '3-5', '6+'] as const).map((cap) => (
-                  <button
-                    key={cap}
-                    onClick={() => setCapacityFilter(cap)}
-                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
-                      capacityFilter === cap
-                        ? 'bg-warmGold text-forest-dark font-bold'
-                        : 'bg-stone-light text-stone-charcoal/60 hover:bg-stone-muted'
-                    }`}
-                  >
-                    {cap === 'All' ? 'Todas' : cap}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Price Slider */}
-            <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
-              <span className="font-bold text-stone-charcoal/70">Precio Máx:</span>
-              <input
-                type="range"
-                min={1000}
-                max={5000}
-                step={250}
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="accent-forest cursor-pointer"
-              />
-              <span className="font-serif font-bold text-forest-dark text-sm w-20 text-right">
-                ${maxPrice.toLocaleString('es-MX')}
-              </span>
-            </div>
-
-            {/* Reset Button */}
-            {(searchQuery || selectedType !== 'All' || capacityFilter !== 'All' || maxPrice < 5000) && (
-              <button
-                onClick={handleResetFilters}
-                className="text-stone-charcoal/60 hover:text-terracotta text-xs font-semibold flex items-center space-x-1 ml-auto"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Limpiar filtros</span>
-              </button>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Accommodation Cards Grid with Framer Motion Layout Transitions */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-3">
             <RefreshCw className="w-8 h-8 text-forest animate-spin" />
-            <p className="text-sm font-medium text-stone-charcoal/70">Cargando catálogo de hospedajes en vivo...</p>
+            <p className="text-sm font-medium text-stone-charcoal/70">Cargando destacados...</p>
           </div>
-        ) : filteredAccommodations.length === 0 ? (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-stone-light border border-stone-muted rounded-2xl p-12 text-center space-y-3"
-          >
-            <SlidersHorizontal className="w-10 h-10 text-stone-charcoal/40 mx-auto" />
-            <h3 className="font-serif text-lg font-bold text-forest-dark">No se encontraron hospedajes</h3>
-            <p className="text-xs text-stone-charcoal/70 max-w-md mx-auto">
-              Intenta cambiar los términos de búsqueda o ajustar los filtros de capacidad y precio.
-            </p>
-            <button
-              onClick={handleResetFilters}
-              className="bg-forest text-stone-light text-xs font-bold px-4 py-2 rounded-xl hover:bg-forest-dark transition-all"
-            >
-              Restablecer Filtros
-            </button>
-          </motion.div>
         ) : (
-          <motion.div 
-            layout
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            <AnimatePresence>
-              {filteredAccommodations.map((acc, index) => (
+          <div className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredAccommodations.map((acc, index) => (
                 <motion.div
                   key={acc.id}
-                  layout
                   initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.35, delay: index * 0.05 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
                 >
                   <AccommodationCard accommodation={acc} />
                 </motion.div>
               ))}
-            </AnimatePresence>
-          </motion.div>
+            </div>
+
+            {/* CTA Banner to Full Catalog Page */}
+            {onNavigateToAccommodations && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="bg-forest-dark text-stone-light rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-warmGold/30"
+              >
+                <div className="space-y-2 text-center md:text-left z-10">
+                  <span className="text-xs uppercase tracking-widest text-warmGold font-bold">
+                    Catálogo Completo Disponible
+                  </span>
+                  <h3 className="font-serif text-2xl sm:text-4xl font-bold">
+                    ¿Buscas una capacidad específica o chimenea privada?
+                  </h3>
+                  <p className="text-stone-muted text-sm font-light max-w-xl">
+                    Conoce nuestros 20 hospedajes con filtros por capacidad, precio y amenidades para encontrar tu lugar ideal.
+                  </p>
+                </div>
+
+                <button
+                  onClick={onNavigateToAccommodations}
+                  className="z-10 inline-flex items-center space-x-3 bg-warmGold hover:bg-warmGold-hover text-forest-dark px-8 py-4 rounded-xl text-base font-bold shadow-xl transition-all transform hover:scale-105 shrink-0"
+                >
+                  <span>Ver Catálogo Completo (20 Cabañas)</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </motion.div>
+            )}
+          </div>
         )}
       </section>
 
@@ -343,6 +205,33 @@ export const HomePage: React.FC = () => {
             </motion.div>
 
           </div>
+        </div>
+      </section>
+
+      {/* Location teaser section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-stone-muted shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-3 text-center md:text-left">
+            <div className="inline-flex items-center space-x-1.5 text-terracotta text-xs font-bold uppercase tracking-wider">
+              <MapPin className="w-4 h-4" />
+              <span>Ubicación Privilegiada</span>
+            </div>
+            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-forest-dark">
+              En el corazón de Zacatlán de las Manzanas
+            </h3>
+            <p className="text-stone-charcoal/70 text-sm max-w-xl">
+              A tan solo minutos del centro histórico, el Reloj Floral Monumental y la impresionante Barranca de los Jilgueros.
+            </p>
+          </div>
+
+          <a
+            href="https://maps.google.com/?q=Zacatlán+Puebla"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-forest hover:bg-forest-dark text-stone-light px-6 py-3.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-md shrink-0"
+          >
+            Ver Mapa en Google Maps
+          </a>
         </div>
       </section>
     </div>

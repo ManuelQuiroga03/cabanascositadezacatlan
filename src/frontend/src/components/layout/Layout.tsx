@@ -1,11 +1,11 @@
 import React from 'react';
-import { Navbar } from './Navbar';
+import { Navbar, type NavTab } from './Navbar';
 import { Footer } from './Footer';
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentTab?: 'landing' | 'matrix' | 'reviews' | 'admin';
-  onSelectTab?: (tab: 'landing' | 'matrix' | 'reviews' | 'admin') => void;
+  currentTab?: NavTab;
+  onSelectTab?: (tab: NavTab) => void;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentTab = 'landing', onSelectTab = () => {} }) => {
