@@ -232,7 +232,7 @@ export const EditAccommodationModal: React.FC<EditAccommodationModalProps> = ({
                 </span>
               </div>
 
-              {/* Cloudinary File Upload Button & URL Input */}
+              {/* Supabase Storage File Upload Button & URL Input */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <label className="bg-forest hover:bg-forest-dark text-stone-light text-xs font-bold px-3.5 py-2 rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow flex-shrink-0">
                   {isUploading ? (
@@ -240,7 +240,7 @@ export const EditAccommodationModal: React.FC<EditAccommodationModalProps> = ({
                   ) : (
                     <Upload className="w-4 h-4 text-warmGold" />
                   )}
-                  <span>{isUploading ? 'Subiendo...' : 'Subir a Cloudinary'}</span>
+                  <span>{isUploading ? 'Subiendo a Nube...' : 'Subir Foto a Supabase'}</span>
                   <input
                     type="file"
                     accept="image/*"

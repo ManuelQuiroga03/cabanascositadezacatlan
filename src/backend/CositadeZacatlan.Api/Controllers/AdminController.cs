@@ -21,7 +21,7 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Sube una fotografía a Cloudinary y retorna la URL segura HTTPS resultante.
+    /// Sube una fotografía a Supabase Storage y retorna la URL pública resultante.
     /// </summary>
     [HttpPost("upload-image")]
     [Consumes("multipart/form-data")]
@@ -40,7 +40,7 @@ public class AdminController : ControllerBase
 
         if (string.IsNullOrEmpty(imageUrl))
         {
-            return BadRequest(new { message = "Ocurrió un error al subir la imagen a Cloudinary." });
+            return BadRequest(new { message = "Ocurrió un error al subir la imagen a Supabase Storage. Verifique que la ApiKey de Supabase esté configurada." });
         }
 
         return Ok(new ImageUploadResponseDto(imageUrl));

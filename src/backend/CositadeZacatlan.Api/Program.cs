@@ -21,8 +21,8 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Business Settings Configuration
 builder.Services.Configure<BusinessSettings>(
     builder.Configuration.GetSection(BusinessSettings.SectionName));
-builder.Services.Configure<CloudinarySettings>(
-    builder.Configuration.GetSection("CloudinarySettings"));
+builder.Services.Configure<SupabaseSettings>(
+    builder.Configuration.GetSection("SupabaseSettings"));
 
 // 2. Database Context Setup (PostgreSQL with EF Core)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -38,13 +38,14 @@ else
 }
 
 // 3. Register Repositories, UnitOfWork, Services, and Workers
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAccommodationRepository, AccommodationRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IBlockedDateRepository, BlockedDateRepository>();
 builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
-builder.Services.AddScoped<IImageUploadService, CositadeZacatlan.Infrastructure.Services.CloudinaryImageUploadService>();
+builder.Services.AddScoped<IImageUploadService, CositadeZacatlan.Infrastructure.Services.SupabaseImageUploadService>();
 
 // Register Background Worker for Expired Holds Cleanup
 builder.Services.AddHostedService<ExpiredHoldCleanupWorker>();
