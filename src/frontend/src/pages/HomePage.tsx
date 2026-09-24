@@ -112,6 +112,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToAccommodations }
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
+                  className="h-full"
                 >
                   <AccommodationCard accommodation={acc} />
                 </motion.div>

@@ -14,7 +14,9 @@ export interface Accommodation {
   imageUrls: string[];
   isActive: boolean;
   bedrooms?: number;
+  bedsCount?: number;
   bathrooms?: number;
+  allowPets?: boolean;
   tagline?: string;
   rating?: number;
   reviewsCount?: number;

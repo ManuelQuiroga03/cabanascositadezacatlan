@@ -284,6 +284,7 @@ export const AccommodationsPage: React.FC<AccommodationsPageProps> = ({ onGoHome
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.35, delay: index * 0.05 }}
+                className="h-full"
               >
                 <AccommodationCard accommodation={acc} />
               </motion.div>

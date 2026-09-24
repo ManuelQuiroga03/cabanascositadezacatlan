@@ -25,7 +25,7 @@ export const HeroPlaceholder: React.FC<HeroPlaceholderProps> = ({ onExploreClick
     <section 
       ref={containerRef}
       id="inicio" 
-      className="relative bg-forest-dark text-stone-light overflow-hidden min-h-[88vh] flex items-center justify-center"
+      className="relative bg-forest-dark text-stone-light overflow-hidden min-h-[calc(100vh-5rem)] flex items-center justify-center"
     >
       {/* Parallax Background Image with high visibility and Apple smooth movement */}
       <motion.div 
@@ -85,7 +85,7 @@ export const HeroPlaceholder: React.FC<HeroPlaceholderProps> = ({ onExploreClick
         >
           <div className="flex items-center space-x-2 bg-forest-dark/80 backdrop-blur-md px-4 py-2 rounded-xl border border-warmGold/20 shadow-lg">
             <Flame className="w-4 h-4 text-terracotta" />
-            <span>Chimeneas a leña</span>
+            <span>Chimeneas de leña</span>
           </div>
           <div className="flex items-center space-x-2 bg-forest-dark/80 backdrop-blur-md px-4 py-2 rounded-xl border border-warmGold/20 shadow-lg">
             <Sparkles className="w-4 h-4 text-warmGold" />

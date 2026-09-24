@@ -1,46 +1,60 @@
-import React, { useEffect, useState } from 'react';
-import type { MonthlyAvailability, Accommodation } from '../../types';
-import { accommodationsService } from '../../services/accommodationsService';
-import { Calendar as CalendarIcon, X, Check, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import type { Accommodation } from '../../types';
+import { ChevronLeft, ChevronRight, X, Calendar as CalendarIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DateRangePickerModalProps {
   accommodation: Accommodation;
+  initialCheckIn?: string;
+  initialCheckOut?: string;
   onClose: () => void;
   onSelectDates: (checkIn: string, checkOut: string) => void;
 }
 
 export const DateRangePickerModal: React.FC<DateRangePickerModalProps> = ({
   accommodation,
+  initialCheckIn,
+  initialCheckOut,
   onClose,
   onSelectDates,
 }) => {
-  const [availability, setAvailability] = useState<MonthlyAvailability | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedCheckIn, setSelectedCheckIn] = useState<string | null>(null);
-  const [selectedCheckOut, setSelectedCheckOut] = useState<string | null>(null);
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [selectedCheckIn, setSelectedCheckIn] = useState<string | null>(initialCheckIn || null);
+  const [selectedCheckOut, setSelectedCheckOut] = useState<string | null>(initialCheckOut || null);
 
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  useEffect(() => {
-    const fetchMonthly = async () => {
-      setLoading(true);
-      try {
-        const data = await accommodationsService.getMonthlyAvailability(accommodation.id, currentMonth, currentYear);
-        setAvailability(data);
-      } catch (err) {
-        console.warn('Fallback monthly availability:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMonthly();
-  }, [accommodation.id, currentMonth, currentYear]);
+  // Month 1 date object
+  const month1Date = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  // Month 2 date object (next month)
+  const month2Date = new Date(today.getFullYear(), today.getMonth() + monthOffset + 1, 1);
 
-  const handleDateClick = (dateStr: string, status: string) => {
-    if (status !== 'Available') return;
+  const formatMonthTitle = (d: Date) => {
+    const monthStr = d.toLocaleDateString('es-MX', { month: 'long' });
+    const capitalized = monthStr.charAt(0).toUpperCase() + monthStr.slice(1);
+    return `${capitalized} ${d.getFullYear()}`;
+  };
+
+  const formatDateStr = (y: number, m: number, d: number) => {
+    const mm = String(m + 1).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${y}-${mm}-${dd}`;
+  };
+
+  const calculateNights = () => {
+    if (!selectedCheckIn || !selectedCheckOut) return 0;
+    const start = new Date(selectedCheckIn + 'T00:00:00');
+    const end = new Date(selectedCheckOut + 'T00:00:00');
+    const diffTime = end.getTime() - start.getTime();
+    return Math.max(0, Math.round(diffTime / (1000 * 3600 * 24)));
+  };
+
+  const nights = calculateNights();
+
+  const handleDayClick = (dateStr: string, isPast: boolean) => {
+    if (isPast) return;
 
     if (!selectedCheckIn || (selectedCheckIn && selectedCheckOut)) {
       setSelectedCheckIn(dateStr);
@@ -55,133 +69,226 @@ export const DateRangePickerModal: React.FC<DateRangePickerModalProps> = ({
     }
   };
 
-  const handleConfirmSelection = () => {
+  const handleClear = () => {
+    setSelectedCheckIn(null);
+    setSelectedCheckOut(null);
+  };
+
+  const handleApply = () => {
     if (selectedCheckIn && selectedCheckOut) {
       onSelectDates(selectedCheckIn, selectedCheckOut);
       onClose();
     }
   };
 
-  return (
+  const renderMonthGrid = (dateObj: Date) => {
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth();
+    
+    // First day index (0 = Sun, 1 = Mon, ..., 6 = Sat)
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    // Days in this month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const daysArray = [];
+    // Padding for days of previous month
+    for (let i = 0; i < firstDayIndex; i++) {
+      daysArray.push(null);
+    }
+    // Days of current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      daysArray.push(d);
+    }
+
+    return (
+      <div className="space-y-3">
+        <h4 className="font-bold text-center text-sm text-stone-900">
+          {formatMonthTitle(dateObj)}
+        </h4>
+
+        {/* Days of Week Header */}
+        <div className="grid grid-cols-7 text-center text-xs font-semibold text-stone-400 pb-1">
+          <span>Do</span>
+          <span>Lu</span>
+          <span>Ma</span>
+          <span>Mi</span>
+          <span>Ju</span>
+          <span>Vi</span>
+          <span>Sá</span>
+        </div>
+
+        {/* Days Grid */}
+        <div className="grid grid-cols-7 gap-y-1 gap-x-1">
+          {daysArray.map((dayNum, idx) => {
+            if (dayNum === null) {
+              return <div key={`empty-${idx}`} className="h-9 w-9" />;
+            }
+
+            const dateStr = formatDateStr(year, month, dayNum);
+            const currentDayDate = new Date(year, month, dayNum);
+            const isPast = currentDayDate < today;
+
+            const isCheckIn = selectedCheckIn === dateStr;
+            const isCheckOut = selectedCheckOut === dateStr;
+            const isInRange =
+              selectedCheckIn &&
+              selectedCheckOut &&
+              dateStr > selectedCheckIn &&
+              dateStr < selectedCheckOut;
+
+            let cellStyle = 'hover:bg-stone-100 text-stone-800 font-medium';
+            if (isPast) {
+              cellStyle = 'text-stone-300 line-through cursor-not-allowed';
+            } else if (isCheckIn || isCheckOut) {
+              cellStyle = 'bg-stone-900 text-white font-bold shadow-md scale-105';
+            } else if (isInRange) {
+              cellStyle = 'bg-stone-200 text-stone-900 font-semibold';
+            }
+
+            return (
+              <button
+                key={dateStr}
+                disabled={isPast}
+                onClick={() => handleDayClick(dateStr, isPast)}
+                className={`h-9 w-9 mx-auto rounded-full flex items-center justify-center text-xs transition-all ${cellStyle}`}
+              >
+                {dayNum}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const formatReadableDate = (dateStr: string | null) => {
+    if (!dateStr) return 'Añadir fecha';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  };
+
+  React.useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      const openModals = document.querySelectorAll('[data-modal-overlay]');
+      if (openModals.length <= 1) {
+        document.body.style.overflow = prevOverflow || '';
+      }
+    };
+  }, []);
+
+  return createPortal(
     <AnimatePresence>
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-forest-dark/70 backdrop-blur-sm flex items-center justify-center p-4"
-      >
-        <motion.div 
+      <div data-modal-overlay="true" className="fixed inset-0 z-[90] overflow-y-auto flex items-center justify-center p-3 sm:p-6">
+        {/* Dark Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        />
+
+        {/* Modal Window Container */}
+        <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-muted relative space-y-4"
+          className="relative bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl z-10 space-y-6 text-left"
         >
-          
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-stone-muted pb-3">
-            <div className="flex items-center space-x-2 text-forest-dark">
-              <CalendarIcon className="w-5 h-5 text-terracotta" />
-              <h3 className="font-serif text-xl font-bold">Calendario de Disponibilidad</h3>
+          {/* Top Header */}
+          <div className="flex items-start justify-between border-b border-stone-100 pb-4">
+            <div>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 flex items-center space-x-2">
+                <CalendarIcon className="w-6 h-6 text-forest" />
+                <span>Elige tus fechas</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-500 mt-1">
+                {nights > 0
+                  ? `${nights} ${nights === 1 ? 'noche' : 'noches'} en ${accommodation.name}`
+                  : 'Selecciona las fechas de tu estancia en Zacatlán'}
+              </p>
             </div>
-            <button onClick={onClose} className="p-1 text-stone-charcoal/60 hover:text-stone-charcoal transition-colors">
+
+            <button
+              onClick={onClose}
+              className="bg-stone-100 hover:bg-stone-200 text-stone-700 p-2 rounded-full transition-all shadow"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <p className="text-xs text-stone-charcoal/70">
-            Selecciona tus fechas de entrada (Check-in) y salida (Check-out) para <strong className="text-forest-dark">{accommodation.name}</strong>.
-          </p>
+          {/* Month Navigation Control Arrows Header */}
+          <div className="relative">
+            <div className="flex items-center justify-between absolute top-0 left-0 right-0 z-10 px-1 pointer-events-none">
+              <button
+                disabled={monthOffset <= 0}
+                onClick={() => setMonthOffset((prev) => Math.max(0, prev - 1))}
+                className={`p-2 rounded-full bg-white shadow-md border border-stone-200 pointer-events-auto transition-all ${
+                  monthOffset <= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 text-stone-800'
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
 
-          {/* Legend with Vector Icons */}
-          <div className="flex items-center justify-around text-[11px] bg-stone-light p-2.5 rounded-xl border border-stone-muted font-semibold">
-            <div className="flex items-center space-x-1.5 text-emerald-800">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Libre</span>
+              <button
+                onClick={() => setMonthOffset((prev) => prev + 1)}
+                className="p-2 rounded-full bg-white shadow-md border border-stone-200 pointer-events-auto transition-all hover:scale-110 text-stone-800"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-            <div className="flex items-center space-x-1.5 text-rose-800">
-              <XCircle className="w-3.5 h-3.5 text-rose-500" />
-              <span>Ocupado</span>
-            </div>
-            <div className="flex items-center space-x-1.5 text-slate-700">
-              <Clock className="w-3.5 h-3.5 text-slate-500" />
-              <span>Bloqueado</span>
+
+            {/* 2 Months Side-by-Side Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2 px-2">
+              {renderMonthGrid(month1Date)}
+              {renderMonthGrid(month2Date)}
             </div>
           </div>
 
-          {/* Month Calendar Grid */}
-          {loading ? (
-            <div className="py-12 text-center text-xs text-stone-charcoal/60">Cargando fechas disponibles...</div>
-          ) : (
-            <div className="space-y-2">
-              <h4 className="text-xs uppercase font-bold text-center text-forest-dark tracking-wider">
-                {new Date(currentYear, currentMonth - 1).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
-              </h4>
-              
-              <div className="grid grid-cols-7 gap-1.5 text-center text-xs font-bold text-stone-charcoal/60 mb-1">
-                <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+          {/* Footer Bar (Selected Summary, Clear, Apply) */}
+          <div className="pt-4 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Left Range Pill Summary */}
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 font-medium text-stone-700">
+                <span className="text-[10px] text-stone-400 uppercase font-bold block">Entrada</span>
+                <span>{formatReadableDate(selectedCheckIn)}</span>
               </div>
-
-              <div className="grid grid-cols-7 gap-1.5">
-                {availability?.days.map((day) => {
-                  const isSelectedIn = selectedCheckIn === day.date;
-                  const isSelectedOut = selectedCheckOut === day.date;
-                  const isInRange = selectedCheckIn && selectedCheckOut && day.date >= selectedCheckIn && day.date <= selectedCheckOut;
-
-                  let btnStyle = "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200 cursor-pointer";
-                  if (day.status === 'Occupied' || day.status === 'Hold') {
-                    btnStyle = "bg-rose-100 text-rose-500 border-rose-200 cursor-not-allowed opacity-60";
-                  } else if (day.status === 'Blocked') {
-                    btnStyle = "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-50";
-                  }
-
-                  if (isSelectedIn || isSelectedOut) {
-                    btnStyle = "bg-warmGold text-forest-dark font-bold border-warmGold shadow-md";
-                  } else if (isInRange) {
-                    btnStyle = "bg-warmGold/30 text-forest-dark border-warmGold/40";
-                  }
-
-                  return (
-                    <button
-                      key={day.date}
-                      disabled={day.status !== 'Available'}
-                      onClick={() => handleDateClick(day.date, day.status)}
-                      className={`h-10 rounded-lg border flex flex-col items-center justify-center text-xs transition-all ${btnStyle}`}
-                    >
-                      <span className="font-bold">{new Date(day.date + 'T00:00:00').getDate()}</span>
-                    </button>
-                  );
-                })}
+              <span className="text-stone-300 font-bold">—</span>
+              <div className="bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 font-medium text-stone-700">
+                <span className="text-[10px] text-stone-400 uppercase font-bold block">Salida</span>
+                <span>{formatReadableDate(selectedCheckOut)}</span>
               </div>
             </div>
-          )}
 
-          {/* Selected Summary & Action */}
-          <div className="pt-3 border-t border-stone-muted flex items-center justify-between">
-            <div className="text-xs">
-              {selectedCheckIn && (
-                <div>
-                  <span className="text-stone-charcoal/60">Entrada:</span> <strong className="text-forest-dark">{selectedCheckIn}</strong>
-                </div>
-              )}
-              {selectedCheckOut && (
-                <div>
-                  <span className="text-stone-charcoal/60">Salida:</span> <strong className="text-forest-dark">{selectedCheckOut}</strong>
-                </div>
-              )}
+            {/* Right Buttons: Borrar & Aplicar */}
+            <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
+              <button
+                onClick={handleClear}
+                className="text-xs font-semibold text-stone-600 underline hover:text-stone-900 px-3 py-2 transition-colors"
+              >
+                Borrar fechas
+              </button>
+
+              <button
+                onClick={handleApply}
+                disabled={!selectedCheckIn || !selectedCheckOut}
+                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md ${
+                  selectedCheckIn && selectedCheckOut
+                    ? 'bg-forest hover:bg-forest-dark text-white cursor-pointer hover:scale-105'
+                    : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                }`}
+              >
+                Aplicar
+              </button>
             </div>
-
-            <button
-              onClick={handleConfirmSelection}
-              disabled={!selectedCheckIn || !selectedCheckOut}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all ${selectedCheckIn && selectedCheckOut ? 'bg-forest text-stone-light shadow hover:bg-forest-dark' : 'bg-stone-muted text-stone-charcoal/50 cursor-not-allowed'}`}
-            >
-              <Check className="w-4 h-4" />
-              <span>Aplicar Fechas</span>
-            </button>
           </div>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </AnimatePresence>,
+    document.body
   );
 };
